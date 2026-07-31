@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Omega Messenger</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+:root,[data-theme="dark"]{
+--bg1:#0e1621;--bg2:#17212b;--bg3:#1b2735;--bg4:#242f3d;--bgH:#202d3b;
+--t1:#f5f5f5;--t2:#8b9bab;--t3:#5a6a7a;
+--acc:#dc143c;--accL:#ff2d55;--accD:#b01030;
+--mo:#2b5278;--mi:#182533;--brd:#1e2c3a;
+--ovl:rgba(0,0,0,.65);--sh:0 2px 12px rgba(0,0,0,.4);--rad:12px;
+--grn:#00e676;--blu:#40c4ff;--pur:#e040fb;--ok:#4caf50;--wrn:#ff9800;--err:#f44336;
+--custom-border:#dc133c;--custom-fill:#232f3d;--custom-glow:#dc133c;
+--brightness:100%;--saturation:100%;
+--font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+--font-color:#f5f5f5;--btn-style:default;
+}
+[data-theme="light"]{
+--bg1:#fff;--bg2:#f0f2f5;--bg3:#fff;--bg4:#e8eaed;--bgH:#e0e0e0;
+--t1:#1a1a1a;--t2:#65737e;--t3:#9eaab5;
+--mo:#dcf8c6;--mi:#fff;--brd:#d5d5d5;
+--ovl:rgba(0,0,0,.4);--sh:0 2px 10px rgba(0,0,0,.12);
+}
+html,body{height:100%;font-family:var(--font-family);background:var(--bg1);color:var(--font-color);overflow:hidden;filter:brightness(var(--brightness)) saturate(var(--saturation))}
+
+/* WHITE NOISE */
+.white-noise-overlay{position:fixed;inset:0;z-index:10000;background:#000;display:none;align-items:center;justify-content:center;flex-direction:column}
+.white-noise-overlay.active{display:flex}
+.white-noise-overlay canvas{width:100%;height:100%;display:block;position:absolute}
+.white-noise-text{position:relative;z-index:1;color:#fff;font-size:2em;text-align:center;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
+
+/* GLITCH */
+.glitch-overlay{position:fixed;inset:0;z-index:9999;pointer-events:none;display:none}
+.glitch-overlay.active{display:block;animation:glitchScreen 3s forwards}
+@keyframes glitchScreen{
+0%{background:transparent}10%{background:rgba(255,0,0,.3);transform:skewX(5deg)}
+20%{background:rgba(0,255,0,.2);transform:skewX(-3deg) skewY(2deg)}
+30%{background:rgba(0,0,255,.3);transform:skewX(8deg)}
+40%{background:rgba(255,255,0,.2);transform:skewX(-5deg) skewY(-3deg)}
+50%{background:rgba(255,0,255,.3);transform:skewX(10deg)}
+60%{background:rgba(0,255,255,.2);transform:skewX(-8deg)}
+70%{background:rgba(255,128,0,.3);transform:skewX(6deg) skewY(4deg)}
+80%{background:rgba(128,0,255,.2);transform:skewX(-4deg)}
+90%{background:rgba(255,0,0,.5);transform:skewX(12deg) skewY(-6deg)}
+100%{background:transparent}
+}
+
+/* BUTTON STYLES */
+[data-btn-style="metal"] .btn{
+background:linear-gradient(145deg,#3a3a3a,#1a1a1a)!important;
+box-shadow:3px 3px 6px #000,-1px -1px 3px #444,inset 0 1px 0 rgba(255,255,255,.1)!important;
+border-color:#555!important;text-shadow:0 1px 2px rgba(0,0,0,.8)!important;
+}
+[data-btn-style="metal"] .btn:hover{background:linear-gradient(145deg,#4a4a4a,#2a2a2a)!important}
+[data-btn-style="wood"] .btn{
+background:linear-gradient(145deg,#8B4513,#5D2E0C)!important;
+box-shadow:3px 3px 6px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,255,255,.1)!important;
+border-color:#6B3410!important;
+}
+[data-btn-style="wood"] .btn:hover{background:linear-gradient(145deg,#9B5523,#6D3E1C)!important}
+
+/* ANIMATIONS */
+@keyframes fadeSlideIn{from{opacity:0;transform:translateY(-20px)}to{opacity:1;transform:translateY(0)}}
+@keyframes pulseGlow{0%,100%{box-shadow:0 0 10px var(--custom-glow)}50%{box-shadow:0 0 25px var(--custom-glow),0 0 50px var(--custom-glow)}}
+@keyframes bounceIn{0%{transform:scale(0)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+@keyframes rainbowBorder{0%{border-color:#ff0000}16%{border-color:#ff8800}33%{border-color:#ffff00}50%{border-color:#00ff00}66%{border-color:#0088ff}83%{border-color:#8800ff}100%{border-color:#ff0000}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes modalIn{from{transform:scale(.94);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes msgIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
+@keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(16px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+@keyframes slideR{from{transform:translateX(110%);opacity:0}to{transform:translateX(0);opacity:1}}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.2}}
+
+.screen{display:none;flex-direction:column;height:100%;width:100%;position:absolute;top:0;left:0;z-index:1}
+.screen.active{display:flex;z-index:2}
+
+.modal-overlay{display:none;position:fixed;inset:0;background:var(--ovl);z-index:100;justify-content:center;align-items:center;padding:10px}
+.modal-overlay.active{display:flex}
+.modal{background:var(--bg2);border-radius:var(--rad);width:100%;max-width:400px;max-height:88vh;overflow-y:auto;position:relative;box-shadow:var(--sh);animation:modalIn .2s ease;border:2px solid var(--custom-border)}
+.modal-close{position:absolute;top:8px;right:8px;background:var(--bg4);border:2px solid var(--custom-border);color:var(--t2);cursor:pointer;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.15s;z-index:5;font-size:16px}
+.modal-close:hover{background:var(--bgH);color:var(--t1)}
+.modal h2{text-align:center;padding:16px 16px 6px;font-size:1.15em;color:var(--t1)}
+.modal-body{padding:12px 18px 18px}
+
+.input-group{margin-bottom:10px}
+.input-group label{display:block;font-size:.8em;color:var(--t2);margin-bottom:3px;font-weight:500}
+input[type="text"],input[type="password"],input[type="number"],textarea,input[type="color"],input[type="range"]{width:100%;padding:10px 12px;background:var(--bg4);border:1.5px solid var(--custom-border);border-radius:10px;color:var(--font-color);font-size:.9em;outline:none;transition:.15s;font-family:var(--font-family)}
+textarea{resize:vertical;min-height:50px;max-height:300px}
+input:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 10px rgba(220,20,60,.3)}
+input[type="color"]{height:45px;cursor:pointer;padding:5px}
+input[type="range"]{padding:5px 0;cursor:pointer}
+
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border:2px solid var(--custom-border);border-radius:10px;font-size:.9em;font-weight:600;cursor:pointer;transition:.12s;width:100%;font-family:var(--font-family);color:var(--font-color);box-shadow:0 0 15px rgba(220,20,60,.2)}
+.btn:disabled{opacity:.5;pointer-events:none}
+.btn-primary{background:var(--acc);color:#fff;border-color:var(--custom-border)}
+.btn-primary:hover{background:var(--accL);box-shadow:0 0 20px var(--custom-glow)}
+.btn-primary:active{transform:scale(.97)}
+.btn-secondary{background:transparent;color:var(--acc);border:1.5px solid var(--acc)}
+.btn-secondary:hover{background:rgba(220,20,60,.08)}
+.btn-danger{background:var(--err);color:#fff;border-color:var(--custom-border)}
+.btn-ghost{background:transparent;color:var(--t2);border:1px solid var(--brd)}
+.btn-ghost:hover{background:var(--bgH);color:var(--t1)}
+.btn-sm{padding:7px 12px;font-size:.82em;width:auto}
+.btn+.btn{margin-top:6px}
+
+.logo-wrap{text-align:center;padding:24px 0 6px}
+.logo{font-size:64px;font-weight:700;font-family:Georgia,serif;color:var(--acc);text-shadow:0 0 25px rgba(220,20,60,.4),0 3px 10px rgba(0,0,0,.3);line-height:1;user-select:none}
+.logo-title{font-size:1.4em;font-weight:700;color:var(--t1);margin-top:3px}
+
+.header{display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--bg2);border-bottom:2px solid var(--custom-border);min-height:48px;flex-shrink:0}
+.header h2{font-size:1.05em;font-weight:600}
+
+.icon-btn{background:none;border:2px solid transparent;color:var(--t2);cursor:pointer;width:36px;height:36px;display:flex;align-items:center;justify-content:center;border-radius:50%;transition:.12s;flex-shrink:0}
+.icon-btn:hover{background:var(--bgH);color:var(--t1);border-color:var(--custom-border);box-shadow:0 0 10px var(--custom-glow)}
+.icon-btn svg{width:20px;height:20px}
+
+.chat-list{flex:1;overflow-y:auto;padding:2px 0}
+.chat-item{display:flex;align-items:center;padding:8px 12px;cursor:pointer;transition:.1s;gap:10px;border-left:3px solid transparent}
+.chat-item:hover{background:var(--bgH);border-left-color:var(--custom-border)}
+.chat-item:active{background:var(--bg4)}
+.chat-avatar{width:46px;height:46px;border-radius:50%;background:var(--bg4);flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:1.1em;font-weight:600;color:var(--acc);overflow:hidden;border:2px solid var(--custom-border)}
+.chat-avatar img{width:100%;height:100%;object-fit:cover}
+.chat-info{flex:1;min-width:0}
+.chat-name{font-weight:600;font-size:.9em;display:flex;align-items:center;gap:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-last-msg{font-size:.8em;color:var(--t2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+.chat-meta{text-align:right;flex-shrink:0}
+.chat-time{font-size:.7em;color:var(--t3)}
+.chat-unread{background:var(--acc);color:#fff;border-radius:10px;font-size:.68em;padding:2px 6px;margin-top:2px;display:inline-block;font-weight:600;box-shadow:0 0 10px rgba(220,20,60,.3)}
+
+.fab{position:fixed;bottom:20px;right:20px;width:52px;height:52px;border-radius:50%;background:var(--acc);color:#fff;border:2px solid var(--custom-border);cursor:pointer;box-shadow:0 0 20px var(--custom-glow);display:flex;align-items:center;justify-content:center;z-index:10;transition:.12s}
+.fab:hover{background:var(--accL);transform:scale(1.04);box-shadow:0 0 30px var(--custom-glow)}
+.fab svg{width:24px;height:24px}
+.fab-menu{position:fixed;bottom:80px;right:20px;background:var(--bg2);border-radius:var(--rad);box-shadow:var(--sh);z-index:11;min-width:200px;overflow:hidden;display:none;animation:modalIn .15s ease;border:2px solid var(--custom-border)}
+.fab-menu.active{display:block}
+.fab-menu-item{display:flex;align-items:center;gap:10px;padding:11px 14px;cursor:pointer;transition:.1s;color:var(--t1);font-size:.88em;border:none;background:none;width:100%;text-align:left}
+.fab-menu-item:hover{background:var(--bgH);border-left:3px solid var(--custom-border);padding-left:11px}
+.fab-menu-item svg{width:18px;height:18px;color:var(--acc);flex-shrink:0}
+
+.chat-header{display:flex;align-items:center;padding:6px 8px;background:var(--bg2);border-bottom:2px solid var(--custom-border);min-height:48px;flex-shrink:0;gap:4px}
+.chat-header-info{flex:1;display:flex;align-items:center;gap:8px;cursor:pointer;min-width:0}
+.chat-header-name{font-weight:600;font-size:.9em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.chat-header-status{font-size:.72em;color:var(--t3)}
+.dev-badge{font-weight:700;color:var(--acc);font-size:.72em;margin-left:2px}
+
+.msgs-wrap{flex:1;overflow-y:auto;padding:6px 12px;display:flex;flex-direction:column;gap:2px;background-size:cover;background-position:center}
+.msg{display:flex;flex-direction:column;max-width:80%;padding:6px 10px;border-radius:12px;position:relative;word-wrap:break-word;font-size:.88em;line-height:1.35;animation:msgIn .15s ease;border:1px solid var(--custom-border);white-space:pre-wrap;word-break:break-word}
+.msg-out{align-self:flex-end;background:var(--custom-fill);border-bottom-right-radius:4px;color:#fff}
+.msg-in{align-self:flex-start;background:var(--mi);border-bottom-left-radius:4px}
+.msg-sender{font-size:.72em;font-weight:600;color:var(--acc);margin-bottom:1px}
+.msg-text{color:var(--font-color);white-space:pre-wrap;word-break:break-word;overflow-wrap:break-word}
+.msg-media{max-width:260px;border-radius:8px;margin:2px 0;cursor:pointer;border:2px solid var(--custom-border)}
+.msg-media img{width:100%;border-radius:8px;display:block}
+.msg-media video{width:100%;border-radius:8px;display:block;max-height:280px}
+.msg-file{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--custom-fill);border-radius:10px;margin:2px 0;cursor:pointer;max-width:240px;border:1px solid var(--custom-border)}
+.msg-file svg{width:24px;height:24px;color:#fff;flex-shrink:0}
+.msg-file-info{flex:1;min-width:0;font-size:.8em;color:#fff}
+.msg-file-name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msg-file-size{color:rgba(255,255,255,.7);font-size:.75em;margin-top:1px}
+.msg-bottom{display:flex;align-items:center;justify-content:flex-end;gap:4px;margin-top:1px}
+.msg-time{font-size:.65em;color:var(--t3)}
+.msg-reactions{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
+.msg-reaction{background:var(--custom-fill);border-radius:10px;padding:1px 6px;font-size:.75em;cursor:pointer;border:1px solid var(--custom-border);transition:.1s;user-select:none}
+.msg-reaction.own{border-color:var(--acc);background:rgba(220,20,60,.12);box-shadow:0 0 8px var(--custom-glow)}
+.msg-reaction:hover{background:var(--bgH)}
+
+.voice-msg{display:flex;align-items:center;gap:7px;padding:4px 8px;min-width:160px;background:var(--custom-fill);border-radius:8px;border:1px solid var(--custom-border)}
+.voice-play{width:32px;height:32px;border-radius:50%;background:var(--acc);border:none;color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 10px var(--custom-glow)}
+.voice-play svg{width:14px;height:14px}
+.voice-dur{font-size:.7em;color:#fff;flex-shrink:0;min-width:28px;text-align:right}
+
+.input-area{display:flex;align-items:flex-end;padding:6px 8px;background:var(--bg2);border-top:2px solid var(--custom-border);gap:3px;flex-shrink:0}
+.msg-input{flex:1;max-height:100px;padding:8px 12px;background:var(--bg4);border:1.5px solid var(--custom-border);border-radius:18px;color:var(--font-color);font-size:.88em;outline:none;resize:none;font-family:var(--font-family);line-height:1.35;min-height:36px}
+.msg-input:focus{border-color:var(--acc);box-shadow:0 0 10px rgba(220,20,60,.3)}
+
+.rec-indicator{display:none;align-items:center;gap:6px;flex:1;padding:0 8px;color:var(--err);font-size:.85em}
+.rec-indicator.active{display:flex}
+.rec-dot{width:8px;height:8px;border-radius:50%;background:var(--err);animation:blink 1s infinite}
+
+.voice-rec-btn{width:36px;height:36px;border-radius:50%;background:var(--bg4);border:2px solid var(--custom-border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s;flex-shrink:0}
+.voice-rec-btn.recording{background:var(--err);border-color:var(--err);animation:pulseGlow 1s infinite}
+.voice-rec-btn svg{width:20px;height:20px;color:var(--t2)}
+.voice-rec-btn.recording svg{color:#fff}
+
+.sticker-btn{background:none;border:2px solid var(--custom-border);cursor:pointer;width:100%;aspect-ratio:1;border-radius:8px;overflow:hidden;padding:0;transition:.1s}
+.sticker-btn:hover{transform:scale(0.95);box-shadow:0 0 10px var(--custom-glow)}
+.sticker-btn img{width:100%;height:100%;object-fit:cover}
+
+.ctx-menu{position:fixed;background:var(--bg2);border-radius:10px;box-shadow:var(--sh);z-index:200;min-width:170px;overflow:hidden;display:none;animation:modalIn .1s ease;border:2px solid var(--custom-border)}
+.ctx-menu.active{display:block}
+.ctx-item{display:flex;align-items:center;gap:8px;padding:10px 14px;cursor:pointer;transition:.1s;color:var(--t1);font-size:.85em;border:none;background:none;width:100%;text-align:left;border-left:3px solid transparent}
+.ctx-item:hover{background:var(--bgH);border-left-color:var(--custom-border)}
+.ctx-item.danger{color:var(--err)}
+.ctx-item svg{width:16px;height:16px;flex-shrink:0}
+
+.react-pick{display:none;position:fixed;background:var(--bg2);border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,.5);z-index:9999!important;padding:8px;gap:3px;flex-wrap:wrap;max-width:260px;border:2px solid var(--custom-border)}
+.react-pick.active{display:flex}
+.react-btn{font-size:1.5em;padding:4px;cursor:pointer;border:none;background:none;border-radius:8px;transition:.1s;line-height:1;width:36px;height:36px;display:flex;align-items:center;justify-content:center}
+.react-btn:hover{background:var(--bgH);transform:scale(1.2)}
+
+.settings-item{display:flex;align-items:center;gap:11px;padding:11px 16px;cursor:pointer;transition:.1s;border-bottom:1px solid var(--brd);border-left:3px solid transparent}
+.settings-item:hover{background:var(--bgH);border-left-color:var(--custom-border)}
+.settings-item svg{width:19px;height:19px;color:var(--acc);flex-shrink:0}
+.settings-item-text{flex:1}
+.settings-item-title{font-size:.9em;font-weight:500}
+.settings-item-sub{font-size:.75em;color:var(--t2);margin-top:1px}
+
+.toggle{position:relative;width:42px;height:23px;background:var(--bg4);border-radius:12px;cursor:pointer;transition:.15s;flex-shrink:0;border:1px solid var(--custom-border)}
+.toggle.active{background:var(--acc);box-shadow:0 0 12px var(--custom-glow)}
+.toggle::after{content:'';position:absolute;top:2px;left:2px;width:19px;height:19px;border-radius:50%;background:#fff;transition:.15s}
+.toggle.active::after{left:21px}
+
+.avatar-lg{width:70px;height:70px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;margin:12px auto;cursor:pointer;overflow:hidden;font-size:1.7em;color:var(--acc);font-weight:700;border:3px solid var(--custom-border)}
+.avatar-lg img{width:100%;height:100%;object-fit:cover}
+
+.member-item{display:flex;align-items:center;gap:10px;padding:9px 12px;cursor:pointer;transition:.1s}
+.member-item:hover{background:var(--bgH)}
+.member-role{font-size:.7em;font-weight:700;margin-left:4px;padding:1px 5px;border-radius:4px}
+.member-role.creator{color:var(--pur);background:rgba(224,64,251,.1)}
+.member-role.senior{color:var(--blu);background:rgba(64,196,255,.1)}
+.member-role.admin{color:var(--grn);background:rgba(0,230,118,.1)}
+
+.rank-badge{font-size:.7em;font-weight:700;padding:1px 5px;border-radius:4px;margin-left:4px}
+.rank-0{color:var(--t2);background:rgba(139,155,171,.1)}
+.rank-1{color:#7c3aed;background:rgba(124,58,237,.1)}
+.rank-2{color:#0891b2;background:rgba(8,145,178,.1)}
+.rank-3{color:#0284c7;background:rgba(2,132,199,.1)}
+.rank-4{color:#06b6d4;background:rgba(6,182,212,.1)}
+.rank-5{color:#8b5cf6;background:rgba(139,92,246,.1)}
+.rank-6{color:#ec4899;background:rgba(236,72,153,.1)}
+.rank-7{color:#f97316;background:rgba(249,115,22,.1)}
+.rank-8{color:var(--acc);background:rgba(220,20,60,.1)}
+
+.fav-badge{font-size:.65em;background:var(--wrn);color:#000;border-radius:4px;padding:1px 4px;margin-left:4px;font-weight:700}
+
+.call-screen{position:fixed;inset:0;background:var(--bg1);z-index:300;display:none;flex-direction:column;align-items:center;justify-content:center}
+.call-screen.active{display:flex}
+.call-av-lg{width:100px;height:100px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:2.5em;color:var(--acc);margin-bottom:16px;overflow:hidden;border:3px solid var(--custom-border)}
+.call-name{font-size:1.3em;font-weight:600;margin-bottom:5px}
+.call-status{color:var(--t2);margin-bottom:30px;font-size:.9em}
+.call-ctrls{display:flex;gap:16px;align-items:center;flex-wrap:wrap;justify-content:center}
+.call-btn{width:56px;height:56px;border-radius:50%;border:2px solid var(--custom-border);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.12s;color:#fff;box-shadow:0 0 15px rgba(220,20,60,.3)}
+.call-btn:hover{transform:scale(1.08);box-shadow:0 0 25px var(--custom-glow)}
+.call-btn.mute{background:var(--bg4);color:var(--t1)}
+.call-btn.mute.active{background:var(--wrn);color:#fff}
+.call-btn.cam{background:var(--bg4);color:var(--t1)}
+.call-btn.cam.active{background:var(--accL)}
+.call-btn.scr{background:var(--bg4);color:var(--t1)}
+.call-btn.scr.active{background:var(--blu)}
+.call-btn.spk{background:var(--bg4);color:var(--t1)}
+.call-btn.spk.active{background:var(--ok)}
+.call-btn.end{background:var(--err)}
+.call-btn.ans{background:var(--ok)}
+.call-btn.audio-call{background:linear-gradient(135deg,#2196F3,#0d47a1)}
+.call-vids{display:grid;grid-template-columns:1fr 1fr;gap:6px;width:100%;max-width:700px;padding:14px;flex:1}
+.call-vid-wrap{position:relative;border-radius:10px;overflow:hidden;background:#000;aspect-ratio:16/9;border:2px solid var(--custom-border)}
+.call-vid-wrap video{width:100%;height:100%;object-fit:cover}
+.call-vid-lbl{position:absolute;bottom:5px;left:5px;background:rgba(0,0,0,.5);color:#fff;padding:2px 7px;border-radius:4px;font-size:.75em}
+
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--bg3);color:var(--t1);padding:9px 20px;border-radius:10px;box-shadow:var(--sh);z-index:999;animation:toastIn .22s ease;font-size:.85em;max-width:88%;text-align:center;border:2px solid var(--custom-border)}
+.toast.err{border-color:var(--err);color:var(--err)}
+
+.confirm-dlg{text-align:center;padding:20px}
+.confirm-dlg p{margin-bottom:16px;font-size:.95em;line-height:1.4}
+.confirm-btns{display:flex;gap:7px}
+.confirm-btns .btn{flex:1}
+
+.cookie-bar{position:fixed;bottom:0;left:0;right:0;background:var(--bg2);border-top:2px solid var(--custom-border);padding:12px 16px;z-index:500;display:none;align-items:center;gap:12px;flex-wrap:wrap}
+.cookie-bar.active{display:flex}
+.cookie-bar p{flex:1;font-size:.82em;color:var(--t2);min-width:160px}
+
+.empty-st{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--t3);gap:6px;padding:30px}
+.empty-st svg{width:50px;height:50px;opacity:.4}
+
+.chk-grp{display:flex;align-items:center;gap:8px;padding:5px 0}
+.chk-grp label{font-size:.85em;color:var(--t1);flex:1;cursor:pointer}
+
+.status-bar{text-align:center;padding:4px;font-size:.75em;background:var(--bg3);border-bottom:2px solid var(--custom-border);color:var(--t2)}
+.status-bar.err{color:var(--err);background:rgba(244,67,54,.08)}
+.status-bar.ok{color:var(--ok);background:rgba(76,175,80,.08)}
+
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(220,20,60,.3);border-top-color:var(--acc);border-radius:50%;animation:spin .5s linear infinite}
+
+.zoom-ov{position:fixed;inset:0;background:rgba(0,0,0,.98);z-index:400;display:none;align-items:center;justify-content:center;flex-direction:column;padding:10px;overflow:hidden}
+.zoom-ov.active{display:flex}
+.zoom-container{position:relative;display:flex;align-items:center;justify-content:center;width:100%;height:90vh;overflow:hidden;cursor:grab}
+.zoom-container:active{cursor:grabbing}
+.zoom-container img,.zoom-container video{max-width:100%;max-height:100%;object-fit:contain;border-radius:4px;transform-origin:center center;transition:transform .1s ease;user-select:none;pointer-events:none;border:2px solid var(--custom-border)}
+.zoom-close{position:absolute;top:12px;right:12px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.3);color:#fff;width:34px;height:34px;border-radius:50%;cursor:pointer;font-size:1.15em;display:flex;align-items:center;justify-content:center;z-index:401}
+.zoom-close:hover{background:rgba(255,255,255,.2)}
+.zoom-hint{color:rgba(255,255,255,.4);font-size:.75em;margin-top:8px;text-align:center}
+
+.notif-pop{position:fixed;top:10px;right:10px;background:var(--bg2);border:2px solid var(--custom-border);border-radius:var(--rad);padding:10px 14px;box-shadow:var(--sh);z-index:600;animation:slideR .28s ease;max-width:280px;cursor:pointer}
+.notif-pop h4{font-size:.88em;margin-bottom:2px;color:var(--t1)}
+.notif-pop p{font-size:.78em;color:var(--t2)}
+
+.ch-post{background:var(--bg3);border-radius:var(--rad);padding:10px 12px;margin:5px 0;border:1px solid var(--custom-border)}
+.ch-post-sender{font-size:.78em;color:var(--acc);font-weight:600;margin-bottom:3px}
+.ch-post-text{line-height:1.4;margin-bottom:5px;white-space:pre-wrap;word-break:break-word}
+.ch-post-media{border-radius:8px;overflow:hidden;margin-bottom:5px;cursor:pointer;border:1px solid var(--custom-border)}
+.ch-post-media img,.ch-post-media video{width:100%;display:block}
+.ch-post-time{font-size:.68em;color:var(--t3)}
+.ch-post-reactions{display:flex;flex-wrap:wrap;gap:3px;margin-top:5px}
+.ch-comments{margin-top:7px;padding-top:7px;border-top:1px solid var(--brd)}
+.ch-comments-title{font-size:.78em;color:var(--t2);margin-bottom:5px;font-weight:500}
+.comment{padding:4px 0;display:flex;gap:6px}
+.comment-av{width:26px;height:26px;border-radius:50%;background:var(--bg4);display:flex;align-items:center;justify-content:center;font-size:.65em;color:var(--acc);flex-shrink:0;overflow:hidden;border:1px solid var(--custom-border)}
+.comment-av img{width:100%;height:100%;object-fit:cover}
+.comment-body{flex:1}
+.comment-name{font-weight:600;font-size:.78em;color:var(--acc)}
+.comment-text{font-size:.82em}
+.comment-time{font-size:.65em;color:var(--t3)}
+.comment-inp-wrap{display:flex;gap:5px;margin-top:5px}
+.comment-inp-wrap input{flex:1;padding:6px 10px;background:var(--bg4);border:1px solid var(--custom-border);border-radius:14px;color:var(--font-color);font-size:.8em;outline:none}
+.comment-inp-wrap input:focus{border-color:var(--acc)}
+.comment-inp-wrap button{background:var(--acc);border:none;color:#fff;border-radius:50%;width:28px;height:28px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+.chat-search{display:none;padding:5px 8px;background:var(--bg2);border-bottom:1px solid var(--brd);gap:5px;align-items:center}
+.chat-search.active{display:flex}
+.chat-search input{flex:1;padding:7px 10px;background:var(--bg4);border:1px solid var(--custom-border);border-radius:14px;color:var(--font-color);font-size:.84em;outline:none}
+.msg.highlight{box-shadow:0 0 0 2px var(--acc)}
+
+.channel-id{color:#40c4ff;cursor:pointer;text-decoration:underline}
+
+.sticker-upload-area{border:2px dashed var(--custom-border);border-radius:8px;padding:20px;text-align:center;cursor:pointer;transition:.2s}
+.sticker-upload-area:hover{background:var(--bg4)}
+
+.font-option{display:inline-block;padding:6px 12px;border:2px solid var(--brd);border-radius:8px;cursor:pointer;margin:3px;font-size:.85em;transition:.12s}
+.font-option.selected{border-color:var(--acc);background:rgba(220,20,60,.1)}
+.font-option:hover{border-color:var(--acc)}
+
+[data-greyscale="true"]{filter:grayscale(100%)!important}
+
+/* DEBUG ORB */
+.debug-float{position:fixed;bottom:80px;left:20px;z-index:1000;cursor:grab;display:none;user-select:none}
+.debug-float.active{display:flex;flex-direction:column;align-items:center}
+.debug-orb{width:52px;height:52px;border-radius:50%;background:radial-gradient(circle at 35% 35%,#00ff00,#006600);border:3px solid #00aa00;box-shadow:0 0 20px rgba(0,255,0,.5),inset 0 2px 4px rgba(255,255,255,.2);display:flex;align-items:center;justify-content:center;font-size:1.4em;animation:pulseOrb 2s infinite;cursor:grab}
+@keyframes pulseOrb{0%,100%{box-shadow:0 0 15px rgba(0,255,0,.4)}50%{box-shadow:0 0 30px rgba(0,255,0,.8)}}
+.debug-orb:hover{transform:scale(1.1)}
+.debug-panel{position:fixed;bottom:145px;left:20px;background:var(--bg2);border:2px solid #00ff00;border-radius:var(--rad);width:280px;max-height:70vh;overflow-y:auto;box-shadow:0 0 20px rgba(0,255,0,.3);display:none;animation:modalIn .2s ease;z-index:1001}
+.debug-panel.active{display:block}
+.debug-panel h3{text-align:center;padding:10px;color:#00ff00;font-family:monospace;border-bottom:1px solid #00ff00;font-size:.95em}
+.debug-item{padding:10px 14px;border-bottom:1px solid rgba(0,255,0,.2);cursor:pointer;font-size:.85em;color:var(--t1);transition:.1s;font-family:monospace}
+.debug-item:hover{background:rgba(0,255,0,.08);color:#00ff00}
+.debug-item-title{font-weight:700;color:#00ff00;margin-bottom:3px}
+.debug-item-desc{font-size:.8em;color:var(--t2)}
+
+@media(max-width:600px){.msg{max-width:86%}.call-vids{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- GLITCH OVERLAY -->
+<div class="glitch-overlay" id="glitchOverlay"></div>
+
+<!-- WHITE NOISE OVERLAY -->
+<div class="white-noise-overlay" id="whiteNoiseOverlay">
+  <canvas id="noiseCanvas" style="position:absolute;inset:0"></canvas>
+  <div class="white-noise-text">⚠️ СИСТЕМА В АВАРИЙНОМ РЕЖИМЕ ⚠️</div>
+</div>
+
+<!-- COOKIE BAR -->
+<div class="cookie-bar" id="cookieBar">
+  <p>Omega использует cookies.</p>
+  <button class="btn btn-primary btn-sm" onclick="acceptCookies()">OK</button>
+</div>
+
+<!-- ZOOM OVERLAY -->
+<div class="zoom-ov" id="zoomOv">
+  <button class="zoom-close" onclick="closeZoom()">&times;</button>
+  <div class="zoom-container" id="zoomContainer">
+    <div id="zoomC"></div>
+  </div>
+  <p class="zoom-hint">Двойной тап — зум • Щипок — масштаб • Колёсико — зум</p>
+</div>
+
+<!-- ==================== LOGIN SCREEN ==================== -->
+<div class="screen active" id="loginScr">
+<div id="fbStat" class="status-bar" style="display:none"></div>
+<div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:18px">
+  <div class="logo-wrap">
+    <div class="logo">&Omega;</div>
+    <div class="logo-title">Omega</div>
+  </div>
+  <div style="width:100%;max-width:320px;margin-top:22px">
+    <div class="input-group">
+      <label>Имя пользователя</label>
+      <input type="text" id="loginU" placeholder="@username">
+    </div>
+    <div class="input-group">
+      <label>Пароль</label>
+      <input type="password" id="loginP" placeholder="Минимум 8 символов"
+        onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <button class="btn btn-primary" id="loginBtn" onclick="doLogin()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M15 3h4a2 2 0 012 2v14a2 2 0 01-2 2h-4M10 17l5-5-5-5M15 12H3"/>
+      </svg>Войти
+    </button>
+    <button class="btn btn-secondary" onclick="openModal('regModal')">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/>
+        <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+      </svg>Регистрация
+    </button>
+  </div>
+</div>
+</div>
+
+<!-- REGISTRATION MODAL -->
+<div class="modal-overlay" id="regModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('regModal')">&times;</button>
+    <h2>Регистрация</h2>
+    <div class="modal-body">
+      <div class="input-group"><label>Никнейм</label><input type="text" id="regNick" placeholder="Мин. 3 символа"></div>
+      <div class="input-group"><label>Username</label><input type="text" id="regUser" placeholder="@username"></div>
+      <div class="input-group"><label>Пароль</label><input type="password" id="regPass" placeholder="Мин. 8 символов"></div>
+      <div class="input-group"><label>Подтверждение</label><input type="password" id="regPass2" placeholder="Повторите"></div>
+      <button class="btn btn-primary" id="regBtn" onclick="doReg()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Создать аккаунт
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-overlay" id="confModal" style="z-index:1001">
+  <div class="modal">
+    <div class="confirm-dlg">
+      <p id="confText"></p>
+      <div class="confirm-btns">
+        <button class="btn btn-primary btn-sm" id="confY">Да</button>
+        <button class="btn btn-ghost btn-sm" id="confN">Нет</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== MAIN SCREEN ==================== -->
+<div class="screen" id="mainScr">
+<div class="header">
+  <button class="icon-btn" onclick="openModal('setModal')">
+    <svg viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.14 12.94c.04-.31.06-.63.06-.94s-.02-.63-.06-.94l2.03-1.58a.49.49 0 00.12-.61l-1.92-3.32a.49.49 0 00-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54a.48.48 0 00-.48-.41h-3.84a.48.48 0 00-.48.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 00-.59.22L2.74 8.87a.48.48 0 00.12.61l2.03 1.58c-.04.31-.06.63-.06.94s.02.63.06.94l-2.03 1.58a.49.49 0 00-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.48-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6A3.6 3.6 0 1115.6 12 3.6 3.6 0 0112 15.6z"/>
+    </svg>
+  </button>
+  <h2>Omega</h2>
+  <div style="display:flex;gap:4px">
+    <button class="icon-btn" onclick="openFavorites()" title="Избранное">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+    </button>
+    <button class="icon-btn" onclick="openModal('searchModal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </button>
+  </div>
+</div>
+
+<div class="chat-list" id="chatList">
+  <div class="empty-st" id="emptySt">
+    <svg viewBox="0 0 24 24" fill="currentColor" opacity=".4">
+      <path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/>
+    </svg>
+    <p>Нет чатов</p>
+    <p style="font-size:.8em">Нажмите + чтобы начать</p>
+  </div>
+</div>
+
+<button class="fab" id="fabBtn" onclick="toggleFab()">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+    <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+  </svg>
+</button>
+
+<div class="fab-menu" id="fabMenu">
+  <button class="fab-menu-item" onclick="openModal('addCntModal');closeFab()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M16 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/>
+      <line x1="19" y1="8" x2="19" y2="14"/><line x1="22" y1="11" x2="16" y2="11"/>
+    </svg>Добавить контакт
+  </button>
+  <button class="fab-menu-item" onclick="openModal('createGrpModal');closeFab()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M17 21v-2a4 4 0 00-4-4H6a4 4 0 00-4-4v2"/><circle cx="9" cy="7" r="4"/>
+      <path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
+    </svg>Создать группу
+  </button>
+  <button class="fab-menu-item" onclick="openModal('createChModal');closeFab()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M22 2L11 13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+    </svg>Создать канал
+  </button>
+  <button class="fab-menu-item" onclick="openStickerPackCreator();closeFab()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <rect x="3" y="3" width="18" height="18" rx="2"/>
+      <circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/>
+      <path d="M21 15l-5-5L5 21"/>
+    </svg>Создать стикер-пак
+  </button>
+</div>
+
+<!-- DEBUG ORB -->
+<div class="debug-float" id="debugFloat">
+  <div class="debug-orb" id="debugOrbBtn" title="Меню отладки">>:)</div>
+</div>
+<div class="debug-panel" id="debugPanel">
+  <h3>⚙ МЕНЮ ОТЛАДКИ ⚙</h3>
+  <div class="debug-item" onclick="debugChgAvatar()">
+    <div class="debug-item-title">📷 Изменить аватарку</div>
+    <div class="debug-item-desc">Пользователя / Группы / Канала</div>
+  </div>
+  <div class="debug-item" onclick="debugBanUser()">
+    <div class="debug-item-title">🔨 Заблокировать пользователя</div>
+    <div class="debug-item-desc">Полная блокировка аккаунта</div>
+  </div>
+  <div class="debug-item" onclick="debugMuteUser()">
+    <div class="debug-item-title">🔇 Запрет сообщений</div>
+    <div class="debug-item-desc">Запретить писать пользователю</div>
+  </div>
+  <div class="debug-item" onclick="debugSetRank()">
+    <div class="debug-item-title">⭐ Выдать звание (1-8)</div>
+    <div class="debug-item-desc">Изменить ранг пользователя</div>
+  </div>
+</div>
+</div><!-- end mainScr -->
+
+<!-- ==================== MODALS (MAIN) ==================== -->
+
+<!-- ADD CONTACT -->
+<div class="modal-overlay" id="addCntModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('addCntModal')">&times;</button>
+    <h2>Добавить контакт</h2>
+    <div class="modal-body">
+      <div class="input-group"><label>Username</label><input type="text" id="addCntU" placeholder="@username"></div>
+      <div class="input-group"><label>Имя</label><input type="text" id="addCntN" placeholder="Имя контакта"></div>
+      <button class="btn btn-primary" onclick="addContact()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Добавить
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE GROUP -->
+<div class="modal-overlay" id="createGrpModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('createGrpModal')">&times;</button>
+    <h2>Создать группу</h2>
+    <div class="modal-body">
+      <div class="avatar-lg" id="grpAvP" onclick="$('grpAvI').click()">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </div>
+      <input type="file" id="grpAvI" accept="image/*" style="display:none" onchange="prevGrpAv(this)">
+      <div class="input-group"><label>Название</label><input type="text" id="grpNmI"></div>
+      <div class="input-group"><label>Описание</label><textarea id="grpDsI"></textarea></div>
+      <div class="input-group"><label>Участники (через запятую)</label><input type="text" id="grpMemI" placeholder="@user1, @user2"></div>
+      <p style="font-size:.8em;color:var(--t2);margin:6px 0">Правила:</p>
+      <div class="chk-grp"><label>Только админы добавляют</label><button class="toggle active" id="gr1" onclick="this.classList.toggle('active')"></button></div>
+      <div class="chk-grp"><label>Участники меняют аватар</label><button class="toggle" id="gr2" onclick="this.classList.toggle('active')"></button></div>
+      <div class="chk-grp"><label>Одобрение вступления</label><button class="toggle" id="gr3" onclick="this.classList.toggle('active')"></button></div>
+      <div class="chk-grp"><label>Только админы пишут</label><button class="toggle" id="gr4" onclick="this.classList.toggle('active')"></button></div>
+      <button class="btn btn-primary" onclick="createGrp()" style="margin-top:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Создать
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CREATE CHANNEL -->
+<div class="modal-overlay" id="createChModal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal('createChModal')">&times;</button>
+    <h2>Создать канал</h2>
+    <div class="modal-body">
+      <div class="avatar-lg" id="chAvP" onclick="$('chAvI').click()">
+        <svg viewBox="0 0 24 24" width="30" height="30" fill="currentColor"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4z"/></svg>
+      </div>
+      <input type="file" id="chAvI" accept="image/*" style="display:none" onchange="prevChAv(this)">
+      <div class="input-group"><label>Название</label><input type="text" id="chNmI"></div>
+      <div class="input-group"><label>Описание</label><textarea id="chDsI"></textarea></div>
+      <p style="font-size:.8em;color:var(--t2);margin:6px 0">Настройки:</p>
+      <div class="chk-grp"><label>Комментарии</label><button class="toggle active" id="ch1" onclick="this.classList.toggle('active')"></button></div>
+      <div class="chk-grp"><label>Реакции</label><button class="toggle active" id="ch2" onclick="this.classList.toggle('active')"></button></div>
+      <div class="chk-grp"><label>По приглашению</label><button class="toggle" id="ch3" onclick="this.classList.toggle('active')"></button></div>
+      <div class="chk-grp"><label>Админы меняют настройки</label><button class="toggle active" id="ch4" onclick="this.classList.toggle('active')"></button></div>
+      <button class="btn btn-primary" onclick="createCh()" style="margin-top:8px">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        Создать
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- STICKER PACK CREATOR -->
+<div class="modal-overlay" id="newStickerPackModal">
+  <div class="modal" style="max-height:90vh">
+    <button class="modal-close" onclick="closeModal('newStickerPackModal')">&times;</button>
+    <h2>Новый стикер-пак</h2>
+    <div class="modal-body">
+      <div class="input-group"><label>Название пака</label><input type="text" id="packNameI" placeholder="Мой пак"></div>
+      <div class="sticker-upload-area" onclick="$('stickerFileI').click()">
+        📷 Нажмите чтобы добавить стикер<br>
+        <small style="font-size:.8em">(PNG/JPEG квадрат 32-512px, макс. 2МБ)</small>
+      </div>
+      <input type="file" id="stickerFileI" accept="image/png,image/jpeg,image/webp" style="display:none" onchange="previewSticker(this)">
+      <div id="stickerPreviewContainer" style="display:none;margin:10px 0;text-align:center">
+        <p style="font-size:.8em;color:var(--t2);margin-bottom:5px">Последний добавленный:</p>
+        <img id="stickerPrev" style="width:80px;height:80px;border:2px solid var(--custom-border);border-radius:8px;object-fit:cover">
+      </div>
+      <div id="stickerPackPreviewGrid" style="display:grid;grid-template-columns:repeat(5,1fr);gap:4px;margin:8px 0"></div>
+      <div id="stickerCountDisplay" style="text-align:center;color:var(--t2);font-size:.85em;margin:8px 0">0 стикеров</div>
+      <button class="btn btn-secondary" onclick="addMoreStickers()" style="margin-bottom:8px">+ Добавить ещё</button>
+      <button class="btn btn-primary" onclick="saveStickerPack()">💾 Сохранить пак</button>
+    </div>
+  </div>
+</div>
+
+<!-- MY STICKER PACKS -->
+<div class="modal-overlay" id="myStickerPacksModal">
+  <div class="modal" style="max-height:90vh">
+    <button class="modal-close" onclick="closeModal('myStickerPacksModal')">&times;</button>
+    <h2>Мои стикер-паки</h2>
+    <div class="modal-body" id="myPacksC"></div>
+  </div>
+</div>
+
+<!-- FAVORITES -->
+<div class="modal-overlay" id="favoritesModal">
+  <div class="modal" style="max-height:88vh">
+    <button class="modal-close" onclick="closeModal('favoritesModal')">&times;</button>
+    <h2>⭐ Избранное</h2>
+    <div class="modal-body" id="favoritesC"></div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="modal-overlay" id="setModal">
+  <div class="modal" style="max-height:90vh">
+    <button class="modal-close" onclick="closeModal('setModal')">&times;</button>
+    <h2>Настройки</h2>
+    <div class="avatar-lg" id="myAvP" onclick="$('myAvI').click()"><span id="myAvL"></span></div>
+    <input type="file" id="myAvI" accept="image/*" style="display:none" onchange="chgMyAv(this)">
+    <p style="text-align:center;font-weight:600;font-size:1em" id="myNickD"></p>
+    <p style="text-align:center;color:var(--t2);font-size:.82em;margin-top:5px" id="myRankD"></p>
+    <p style="text-align:center;color:var(--t2);font-size:.82em;margin-bottom:10px" id="myUserD"></p>
+
+    <div class="settings-item" onclick="openModal('chgNickModal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Никнейм</div></div>
+    </div>
+    <div class="settings-item" onclick="openModal('chgBioModal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Био</div><div class="settings-item-sub" id="bioP">Не указано</div></div>
+    </div>
+    <div class="settings-item" onclick="openModal('chgPassModal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Пароль</div></div>
+    </div>
+    <div class="settings-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Тема</div><div class="settings-item-sub" id="thLbl">Тёмная</div></div>
+      <button class="toggle" id="thTgl" onclick="tglTheme()"></button>
+    </div>
+    <div class="settings-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H6"/><circle cx="9" cy="7" r="4"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Скрыть username</div></div>
+      <button class="toggle" id="hideTgl" onclick="tglHide()"></button>
+    </div>
+    <div class="settings-item" onclick="openModal('customDesignModal')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Дизайн</div><div class="settings-item-sub">Цвета, шрифты, анимации</div></div>
+    </div>
+    <div class="settings-item" onclick="openStickerManager()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Мои стикеры</div><div class="settings-item-sub">Управление пакетами</div></div>
+    </div>
+    <div class="settings-item" onclick="openFavorites()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Избранное</div></div>
+    </div>
+    <div class="settings-item" onclick="switchAcc()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title">Сменить аккаунт</div></div>
+    </div>
+    <div class="settings-item" onclick="delAcc()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="var(--err)" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6m3 0V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      <div class="settings-item-text"><div class="settings-item-title" style="color:var(--err)">Удалить аккаунт</div></div>
+    </div>
+  </div>
+</div>
+
+<!-- CUSTOM DESIGN -->
+<div class="modal-overlay" id="customDesignModal">
+  <div class="modal" style="max-height:90vh">
+    <button class="modal-close" onclick="closeModal('customDesignModal')">&times;</button>
+    <h2>🎨 Дизайн</h2>
+    <div class="modal-body">
+      <p style="font-size:.82em;font-weight:700;color:var(--acc);margin-bottom:8px">ЦВЕТА</p>
+      <div class="input-group"><label>Цвет границ</label><input type="color" id="borderColorI" value="#dc133c" onchange="updateCustomDesign()"></div>
+      <div class="input-group"><label>Цвет фона элементов</label><input type="color" id="fillColorI" value="#232f3d" onchange="updateCustomDesign()"></div>
+      <div class="input-group"><label>Цвет свечения</label><input type="color" id="glowColorI" value="#dc133c" onchange="updateCustomDesign()"></div>
+      <div class="input-group"><label>Цвет шрифта</label><input type="color" id="fontColorI" value="#f5f5f5" onchange="updateCustomDesign()"></div>
+
+      <p style="font-size:.82em;font-weight:700;color:var(--acc);margin:12px 0 8px">ФИЛЬТРЫ</p>
+      <div class="input-group"><label>Яркость (%)</label><input type="number" id="brightnessI" value="100" min="50" max="150" onchange="updateCustomDesign()"></div>
+      <div class="input-group"><label>Насыщенность (%)</label><input type="number" id="saturationI" value="100" min="0" max="200" onchange="updateCustomDesign()"></div>
+
+      <p style="font-size:.82em;font-weight:700;color:var(--acc);margin:12px 0 8px">ШРИФТ</p>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px">
+        <span class="font-option selected" data-font="'Segoe UI',system-ui,sans-serif" onclick="selectFont(this)">Стандарт</span>
+        <span class="font-option" data-font="'Roboto',sans-serif" style="font-family:Roboto,sans-serif" onclick="selectFont(this)">Roboto</span>
+        <span class="font-option" data-font="'Courier New',monospace" style="font-family:'Courier New',monospace" onclick="selectFont(this)">Courier</span>
+        <span class="font-option" data-font="Georgia,serif" style="font-family:Georgia,serif" onclick="selectFont(this)">Georgia</span>
+        <span class="font-option" data-font="'Arial',sans-serif" style="font-family:Arial,sans-serif" onclick="selectFont(this)">Arial</span>
+        <span class="font-option" data-font="'Times New Roman',serif" style="font-family:'Times New Roman',serif" onclick="selectFont(this)">Times</span>
+      </div>
+
+      <p style="font-size:.82em;font-weight:700;color:var(--acc);margin:12px 0 8px">СТИЛИ КНОПОК</p>
+      <div style="display:flex;gap:6px;margin-bottom:10px">
+        <button class="btn btn-ghost btn-sm" onclick="setBtnStyle('default')">По умолчанию</button>
+        <button class="btn btn-ghost btn-sm" onclick="setBtnStyle('metal')">Металл</button>
+        <button class="btn btn-ghost btn-sm" onclick="setBtnStyle('wood')">Дерево</button>
+      </div>
+
+      <p style="font-size:.82em;font-weight:700;color:var(--acc);margin:12px 0 8px">ЭФФЕКТЫ</p>
+      <div class="chk-grp"><label>Объёмные кнопки (3D)</label><button class="toggle" id="btn3dTgl" onclick="toggle3DButtons()"></button></div>
+      <div class="chk-grp"><label>Объёмный текст (3D)</label><button class="toggle" id="text3dTgl" onclick="toggle3DText()"></button></div>
+
+      <p style="font-size:.82em;font-weight:700;color:var(--acc);margin:12px 0 8px">АНИМАЦИИ</p>
+      <div class="chk-grp"><label>Пульсирующее свечение кнопок</label><button class="toggle" id="animGlowTgl" onclick="toggleGlowAnim()"></button></div>
+      <div class="chk-grp"><label>Радужные границы</label><button class="toggle" id="animRainbowTgl" onclick="toggleRainbowAnim()"></button></div>
+
+      <div id="glowColorPreview" style="text-align:center;padding:10px;border-radius:8px;background:var(--bg3);margin-top:12px;border:2px solid var(--custom-border);font-size:.85em">✨ Предпросмотр свечения</div>
+      <button class="btn btn-ghost" onclick="resetCustomDesign()" style="margin-top:10px">🔄 Сбросить всё</button>
+    </div>
+  </div>
+</div>
+
+<!-- SUB-MODALS SETTINGS -->
+<div class="modal-overlay" id="chgNickModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('chgNickModal')">&times;</button>
+  <h2>Никнейм</h2><div class="modal-body">
+  <div class="input-group"><input type="text" id="newNickI" placeholder="Мин. 3 символа"></div>
+  <button class="btn btn-primary" onclick="chgNick()">Сохранить</button>
+  </div></div>
+</div>
+<div class="modal-overlay" id="chgBioModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('chgBioModal')">&times;</button>
+  <h2>Био</h2><div class="modal-body">
+  <div class="input-group"><textarea id="newBioI" placeholder="О себе" rows="3"></textarea></div>
+  <button class="btn btn-primary" onclick="chgBio()">Сохранить</button>
+  </div></div>
+</div>
+<div class="modal-overlay" id="chgPassModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('chgPassModal')">&times;</button>
+  <h2>Пароль</h2><div class="modal-body">
+  <div class="input-group"><label>Текущий</label><input type="password" id="oldPI"></div>
+  <div class="input-group"><label>Новый (мин. 8)</label><input type="password" id="newPI"></div>
+  <button class="btn btn-primary" onclick="chgPass()">Сохранить</button>
+  </div></div>
+</div>
+<div class="modal-overlay" id="searchModal">
+  <div class="modal" style="max-height:78vh"><button class="modal-close" onclick="closeModal('searchModal')">&times;</button>
+  <h2>Поиск каналов</h2><div class="modal-body">
+  <div class="input-group"><input type="text" id="searchI" placeholder="Название или ID" oninput="searchCh()"></div>
+  <div id="searchRes"></div>
+  </div></div>
+</div>
+<div class="modal-overlay" id="profileModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('profileModal')">&times;</button>
+  <div class="modal-body" id="profileC"></div></div>
+</div>
+<div class="modal-overlay" id="grpSetModal">
+  <div class="modal" style="max-height:82vh"><button class="modal-close" onclick="closeModal('grpSetModal')">&times;</button>
+  <h2>Группа</h2><div class="modal-body" id="grpSetC"></div></div>
+</div>
+<div class="modal-overlay" id="chSetModal">
+  <div class="modal" style="max-height:82vh"><button class="modal-close" onclick="closeModal('chSetModal')">&times;</button>
+  <h2>Канал</h2><div class="modal-body" id="chSetC"></div></div>
+</div>
+<div class="modal-overlay" id="memModal">
+  <div class="modal" style="max-height:78vh"><button class="modal-close" onclick="closeModal('memModal')">&times;</button>
+  <h2>Участники</h2><div class="modal-body" id="memC"></div></div>
+</div>
+<div class="modal-overlay" id="roleModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('roleModal')">&times;</button>
+  <h2>Роль</h2><div class="modal-body" id="roleC"></div></div>
+</div>
+<div class="modal-overlay" id="muteModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('muteModal')">&times;</button>
+  <h2>Заглушить</h2><div class="modal-body" id="muteC"></div></div>
+</div>
+<div class="modal-overlay" id="stickersModal">
+  <div class="modal" style="max-height:78vh"><button class="modal-close" onclick="closeModal('stickersModal')">&times;</button>
+  <h2>Стикеры</h2><div class="modal-body" id="stickersC"></div></div>
+</div>
+
+<!-- CALL MODAL -->
+<div class="modal-overlay" id="callModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('callModal')">&times;</button>
+  <h2>Звонок</h2>
+  <div class="modal-body" id="callModalC">
+    <button class="btn btn-primary" onclick="startCall('audio')" style="background:linear-gradient(135deg,#2196F3,#0d47a1);border-color:#2196F3;box-shadow:0 4px 15px rgba(33,150,243,.4)">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/>
+      </svg>📞 Аудиозвонок
+    </button>
+    <button class="btn btn-primary" onclick="showVideoQuality()" style="margin-top:8px">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polygon points="23 7 16 12 23 17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      🎥 Видеозвонок
+    </button>
+    <div id="vqP" style="display:none;margin-top:8px;padding:10px;background:var(--bg3);border-radius:8px;border:1px solid var(--custom-border)">
+      <p style="font-size:.85em;color:var(--t2);margin-bottom:8px;font-weight:600">Качество видео:</p>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-ghost btn-sm" onclick="startCall('video','360p')">360p</button>
+        <button class="btn btn-ghost btn-sm" onclick="startCall('video','480p')">480p</button>
+        <button class="btn btn-ghost btn-sm" onclick="startCall('video','720p')">720p HD</button>
+      </div>
+    </div>
+  </div>
+  </div>
+</div>
+
+<!-- DEBUG MODALS -->
+<div class="modal-overlay" id="debugAvModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('debugAvModal')">&times;</button>
+  <h2>📷 Изменить аватарку</h2><div class="modal-body">
+  <div class="input-group"><label>Тип (user/group/channel)</label><input type="text" id="debugAvType" placeholder="user"></div>
+  <div class="input-group"><label>Username / Название / ID</label><input type="text" id="debugAvTarget" placeholder="@username"></div>
+  <button class="btn btn-primary" onclick="debugDoChgAvatar()">Изменить</button>
+  </div></div>
+</div>
+<div class="modal-overlay" id="debugBanModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('debugBanModal')">&times;</button>
+  <h2>🔨 Заблокировать</h2><div class="modal-body">
+  <div class="input-group"><label>Username</label><input type="text" id="debugBanTarget" placeholder="@username"></div>
+  <div class="input-group"><label>Причина</label><input type="text" id="debugBanReason" placeholder="Причина блокировки"></div>
+  <button class="btn btn-danger" onclick="debugDoBan()">Заблокировать</button>
+  </div></div>
+</div>
+<div class="modal-overlay" id="debugMuteModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('debugMuteModal')">&times;</button>
+  <h2>🔇 Запрет сообщений</h2><div class="modal-body">
+  <div class="input-group"><label>Username</label><input type="text" id="debugMuteTarget" placeholder="@username"></div>
+  <div class="input-group"><label>Длительность (часы, 0 = навсегда)</label><input type="number" id="debugMuteHours" value="24" min="0"></div>
+  <button class="btn btn-danger" onclick="debugDoMute()">Применить</button>
+  </div></div>
+</div>
+<div class="modal-overlay" id="debugRankModal">
+  <div class="modal"><button class="modal-close" onclick="closeModal('debugRankModal')">&times;</button>
+  <h2>⭐ Выдать звание</h2><div class="modal-body">
+  <div class="input-group"><label>Username</label><input type="text" id="debugRankTarget" placeholder="@username"></div>
+  <div class="input-group"><label>Звание (0-8)</label><input type="number" id="debugRankValue" value="1" min="0" max="8"></div>
+  <p style="font-size:.78em;color:var(--t2);margin-bottom:8px">0-Польз. 1-Тестер 2-Мл.Мод 3-Мод 4-Ст.Мод 5-Мл.Адм 6-Адм 7-Гл.Мод 8-Разработчик</p>
+  <button class="btn btn-primary" onclick="debugDoSetRank()">Выдать</button>
+  </div></div>
+</div>
+
+<!-- ==================== CHAT SCREEN ==================== -->
+<div class="screen" id="chatScr">
+<div class="chat-header">
+  <button class="icon-btn" onclick="goBack()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="15 18 9 12 15 6"/></svg>
+  </button>
+  <div class="chat-header-info" onclick="showProfile()">
+    <div class="chat-avatar" id="chAv" style="width:36px;height:36px;font-size:.85em"></div>
+    <div style="min-width:0">
+      <div class="chat-header-name" id="chNm"></div>
+      <div class="chat-header-status" id="chSt"></div>
+    </div>
+  </div>
+  <button class="icon-btn" id="chSearchBtn" onclick="tglChatSearch()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="7"/><line x1="20" y1="20" x2="16" y2="16"/></svg>
+  </button>
+  <button class="icon-btn" id="chCallBtn" onclick="openModal('callModal')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+  </button>
+</div>
+
+<div class="chat-search" id="chatSearch">
+  <input type="text" id="chatSearchI" placeholder="Поиск..." oninput="searchMsgs()">
+  <button class="icon-btn" onclick="tglChatSearch()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+  </button>
+</div>
+
+<div class="msgs-wrap" id="msgsWrap"></div>
+
+<!-- INPUT AREA — без кнопки видео-кружка -->
+<div class="input-area" id="inputArea">
+  <button class="icon-btn" onclick="$('fileI').click()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 01-8.49-8.49l9.19-9.19a4 4 0 015.66 5.66l-9.2 9.19a2 2 0 01-2.83-2.83l8.49-8.48"/></svg>
+  </button>
+  <input type="file" id="fileI" style="display:none" onchange="attachFile(this)">
+
+  <!-- ENTER = новая строка, Ctrl+Enter = отправить -->
+  <textarea class="msg-input" id="msgI" placeholder="Сообщение..." rows="1"
+    oninput="autoR(this)"
+    onkeydown="if(event.key==='Enter'&&(event.ctrlKey||event.metaKey)){event.preventDefault();sendMsg()}"></textarea>
+
+  <!-- VOICE RECORD BUTTON -->
+  <button class="voice-rec-btn" id="voiceBtn" title="Удерживайте для записи"
+    onmousedown="startVoiceRecord()" onmouseup="stopVoiceRecord()" onmouseleave="stopVoiceRecord()"
+    ontouchstart="startVoiceRecord()" ontouchend="stopVoiceRecord()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/>
+      <path d="M19 10v2a7 7 0 01-14 0v-2"/>
+      <line x1="12" y1="19" x2="12" y2="23"/>
+      <line x1="8" y1="23" x2="16" y2="23"/>
+    </svg>
+  </button>
+
+  <button class="icon-btn" onclick="openModal('stickersModal')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5" fill="currentColor"/><path d="M21 15l-5-5L5 21"/></svg>
+  </button>
+  <button class="icon-btn" id="sendBtn" onclick="sendMsg()">
+    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+  </button>
+</div>
+
+<!-- REC INDICATOR -->
+<div class="rec-indicator" id="recInd">
+  <div class="rec-dot"></div>
+  <span id="recLabel">🎤 Запись...</span>
+  <span id="recT">0:00</span>
+  <button style="margin-left:auto;background:var(--err);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.8em" onclick="cancelVoiceRecord()">Отмена</button>
+  <button style="margin-left:4px;background:var(--ok);color:#fff;border:none;border-radius:6px;padding:4px 10px;cursor:pointer;font-size:.8em" onclick="stopVoiceRecord()">Отправить</button>
+</div>
+</div><!-- end chatScr -->
+
+<!-- ==================== CALL SCREEN ==================== -->
+<div class="call-screen" id="callScr">
+  <div class="call-av-lg" id="callAv"></div>
+  <div class="call-name" id="callNm"></div>
+  <div class="call-status" id="callStat">Вызов...</div>
+  <div id="callVids" class="call-vids" style="display:none">
+    <div class="call-vid-wrap"><video id="remVid" autoplay playsinline></video><div class="call-vid-lbl">Собеседник</div></div>
+    <div class="call-vid-wrap"><video id="locVid" autoplay playsinline muted></video><div class="call-vid-lbl">Вы</div></div>
+  </div>
+  <div class="call-ctrls">
+    <button class="call-btn mute" id="muteB" onclick="tglMic()" title="Микрофон">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 00-3 3v8a3 3 0 006 0V4a3 3 0 00-3-3z"/><path d="M19 10v2a7 7 0 01-14 0v-2"/></svg>
+    </button>
+    <button class="call-btn cam" id="camB" onclick="tglCam()" style="display:none" title="Камера">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+    </button>
+    <button class="call-btn scr" id="scrB" onclick="tglScr()" style="display:none" title="Экран">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+    </button>
+    <button class="call-btn spk" id="spkB" onclick="tglSpk()" title="Динамик">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19"/><path d="M19.07 4.93a10 10 0 010 14.14"/></svg>
+    </button>
+    <button class="call-btn audio-call" id="audioCallB" style="display:none" onclick="makeAudioOnly()" title="Аудио режим">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+    </button>
+    <button class="call-btn end" onclick="endCall()" title="Завершить">
+      <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+        <path d="M17 16.4v2.6a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a16 16 0 0113.36 6.78 16 16 0 011.28 13.46z" transform="rotate(135 12 12)"/>
+      </svg>
+    </button>
+  </div>
+  <button style="background:var(--bg4);color:var(--t1);border:2px solid var(--custom-border);padding:6px 10px;border-radius:6px;cursor:pointer;margin-top:12px;font-size:.8em" onclick="doPiP()">PiP</button>
+</div>
+
+<!-- INCOMING CALL -->
+<div class="modal-overlay" id="incModal">
+  <div class="modal" style="text-align:center;padding:24px">
+    <div class="call-av-lg" style="margin:0 auto 12px;width:80px;height:80px;font-size:1.8em"><span id="incL"></span></div>
+    <h2 id="incNm"></h2>
+    <p style="color:var(--t2);margin:5px 0 18px;font-size:.9em" id="incTp">Входящий</p>
+    <div style="display:flex;gap:12px;justify-content:center">
+      <button class="call-btn ans" onclick="ansCall()">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor"><path d="M22 16.92v3a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a2 2 0 012 1.72 12.84 12.84 0 00.7 2.81 2 2 0 01-.45 2.11L8.09 9.91a16 16 0 006 6l1.27-1.27a2 2 0 012.11-.45 12.84 12.84 0 002.81.7A2 2 0 0122 16.92z"/></svg>
+      </button>
+      <button class="call-btn end" onclick="rejCall()">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor">
+          <path d="M17 16.4v2.6a2 2 0 01-2.18 2 19.79 19.79 0 01-8.63-3.07 19.5 19.5 0 01-6-6 19.79 19.79 0 01-3.07-8.67A2 2 0 014.11 2h3a16 16 0 0113.36 6.78 16 16 0 011.28 13.46z" transform="rotate(135 12 12)"/>
+        </svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- CONTEXT MENU & REACTION PICKER -->
+<div class="ctx-menu" id="ctxMenu"></div>
+<div class="react-pick" id="reactPick"></div>
+
+</div><!-- end #app -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-messaging-compat.js"></script>
+<script src="omega-bundle.js"></script>
+<script src="omega-vnote2.js"></script>
+<script src="omega-patch3.js"></script> <!-- ДОБАВИТЬ -->
+</body>
+</html>
